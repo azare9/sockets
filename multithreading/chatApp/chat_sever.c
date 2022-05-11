@@ -1,5 +1,6 @@
 #include<stdio.h>
 #include<stdlib.h>
+#include <stdbool.h> 
 #include<string.h>
 #include<unistd.h>
 #include<arpa/inet.h>
@@ -102,6 +103,7 @@ void *handle_clnt(void *arg)
 	memset(msgcpy,'\0' , BUF_SIZE);
 	//name of the client that has sent the msg
 	char name[20];
+	bool clnt_trouve=false;
 	
 	read(clnt_sock,name,sizeof(msg));	        		
 	printf("connected client : %s len %ld with fd %d \n",name,strlen(name),clnt_sock);
@@ -140,15 +142,27 @@ void *handle_clnt(void *arg)
 	    		 
 	    		//printf("msg vres la cible %s",msgcpy);
 	    		/*la recherche du fd correspond au nom de la cible pname*/
-	    		for(int j=0;j<names_cnt;j++)
+	    		int k;
+	    		for(k=0;k<names_cnt;k++)
 	    		{
-	    		   if(strncmp(names[j] , cible_name,strlen(cible_name))==0){
-	    		      //printf("cible est %s \n",names[j]);
-	    		      send_msg_cible(msgcpy, str_len, j);
+	    		   if(strncmp(names[k] , cible_name,strlen(cible_name))==0){
+			      clnt_trouve = true;
+	    		      send_msg_cible(msgcpy, str_len, k);
+	    		      break;
+	    		   }else{
+	    		      clnt_trouve = false;
 	    		   }
 	    		}
-	    		/*si l'emeteur envoie le msg a lui meme donc on ne fait pas la recherche du fd correspond a son nom */
-	    		
+	    		/*si l'emeteur envoie le msg a une personne qui n'a pas ete connecter */
+	    		if(!clnt_trouve ){
+	    			for(int n=0;n<clnt_cnt ;n++)
+		    		{
+		    		    if( clnt_socks[n] == clnt_sock)
+		    		    {
+		    		       send_msg_cible("le client n'est pas trouver\n", 100, n);
+		    		    }
+		    		}
+	    		}	  
 	    		
 	}
 	printf("%s has deconnected \n",name);
@@ -189,5 +203,4 @@ void send_msg_cible(char *msg, int len, int indice_fd){// send to cible
 	    write(clnt_socks[indice_fd], msg, len);
 	pthread_mutex_unlock(&mutex);    
 }
-
 
